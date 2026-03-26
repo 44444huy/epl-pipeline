@@ -7,7 +7,7 @@ from sys import path
 path.append("D:/EPL_PROJECT/epl-pipeline/src")
 
 from models.epl_models import Match, MatchEvent, Standing
-from utils.kafka_utils import create_producer_with_retry, safe_send
+from utils.kafka_utils import create_producer_with_retry, safe_send_validated
 import logging
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ def main():
 
     def finish_match(match: Match):
         match.status = "finished"
-        safe_send(producer, "epl.matches", match.match_id, match.to_json(), dlq)
+        safe_send_validated(producer, "epl.matches", match.match_id, match.to_json(), dlq)
 
         # Publish standings
         for rank, team in enumerate(random.sample(TEAMS, len(TEAMS)), 1):
@@ -134,7 +134,7 @@ def main():
                 season="2024/25",
                 timestamp=now_iso(),
             )
-            safe_send(producer, "epl.standings", team, standing.to_json(), dlq)
+            safe_send_validated(producer, "epl.standings", team, standing.to_json(), dlq)
 
         producer.flush()
         logger.info(
@@ -157,15 +157,15 @@ def main():
             event = simulate_tick(match)
 
             if event:
-                safe_send(producer, "epl.matches", match.match_id, match.to_json(), dlq)
-                safe_send(producer, "epl.events", match.match_id, event.to_json(), dlq)
+                safe_send_validated(producer, "epl.matches", match.match_id, match.to_json(), dlq)
+                safe_send_validated(producer, "epl.events", match.match_id, event.to_json(), dlq)
                 logger.info(
                     f"[tick {tick:03d}] "
                     f"{match.home_team} {match.home_score}-{match.away_score} {match.away_team} | "
                     f"{event.event_type.upper()} → {event.player} (phút {event.minute})"
                 )
             else:
-                safe_send(producer, "epl.matches", match.match_id, match.to_json(), dlq)
+                safe_send_validated(producer, "epl.matches", match.match_id, match.to_json(), dlq)
                 logger.info(
                     f"[tick {tick:03d}] "
                     f"{match.home_team} {match.home_score}-{match.away_score} {match.away_team} | --"

@@ -2,6 +2,11 @@ import logging
 import time
 from kafka import KafkaProducer
 from kafka.errors import KafkaError, NoBrokersAvailable
+import json
+from jsonschema import validate, ValidationError
+from schemas.epl_schemas import TOPIC_SCHEMAS
+
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,3 +79,53 @@ def safe_send(
             "error": str(e),
         })
         return False
+    
+
+
+
+
+def validate_message(topic: str, value: bytes) -> tuple[bool, str]:
+    """
+    Validate message trước khi gửi lên Kafka.
+    Trả về (True, "") nếu hợp lệ, (False, error_msg) nếu không.
+    """
+    schema = TOPIC_SCHEMAS.get(topic)
+    if not schema:
+        # Topic không có schema → cho qua
+        return True, ""
+
+    try:
+        data = json.loads(value.decode("utf-8"))
+        validate(instance=data, schema=schema)
+        return True, ""
+    except ValidationError as e:
+        return False, e.message
+    except Exception as e:
+        return False, str(e)
+
+
+def safe_send_validated(
+    producer: KafkaProducer,
+    topic: str,
+    key: str,
+    value: bytes,
+    dlq_messages: list,
+) -> bool:
+    """
+    Validate schema TRƯỚC khi gửi.
+    Message invalid → vào DLQ ngay, không gửi lên Kafka.
+    """
+    # Validate trước
+    is_valid, error_msg = validate_message(topic, value)
+    if not is_valid:
+        logger.error(f"❌ Schema invalid topic={topic} key={key}: {error_msg}")
+        dlq_messages.append({
+            "topic": topic,
+            "key": key,
+            "value": value,
+            "error": f"Schema validation failed: {error_msg}",
+        })
+        return False
+
+    # Gửi nếu valid
+    return safe_send(producer, topic, key, value, dlq_messages)
