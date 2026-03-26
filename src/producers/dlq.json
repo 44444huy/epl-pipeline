@@ -1,0 +1,104 @@
+[
+  {
+    "topic": "epl.matches",
+    "key": "m25_02",
+    "value": "b'{\"match_id\": \"m25_02\", \"home_team\": \"Liverpool\", \"away_team\": \"Chelsea\", \"home_score\": 0, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Anfield\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_02",
+    "value": "b'{\"event_id\": \"fa9978ac-943f-4f24-a09b-8891101b6087\", \"match_id\": \"m25_02\", \"event_type\": \"yellow_card\", \"minute\": 28, \"team\": \"Chelsea\", \"player\": \"Gallagher\", \"detail\": null, \"timestamp\": \"2026-03-26T02:54:12.582229+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_03",
+    "value": "b'{\"match_id\": \"m25_03\", \"home_team\": \"Man Utd\", \"away_team\": \"Arsenal\", \"home_score\": 0, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Old Trafford\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_03",
+    "value": "b'{\"event_id\": \"66f6360d-724c-4366-b1ee-c37e34ce6c37\", \"match_id\": \"m25_03\", \"event_type\": \"substitution\", \"minute\": 78, \"team\": \"Man Utd\", \"player\": \"Mount\", \"detail\": null, \"timestamp\": \"2026-03-26T02:54:35.602907+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_05",
+    "value": "b'{\"match_id\": \"m25_05\", \"home_team\": \"Tottenham\", \"away_team\": \"Brighton\", \"home_score\": 0, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Tottenham Hotspur Stadium\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_05",
+    "value": "b'{\"event_id\": \"f1a34f64-d146-4145-9c89-231ec2aa585d\", \"match_id\": \"m25_05\", \"event_type\": \"substitution\", \"minute\": 70, \"team\": \"Brighton\", \"player\": \"Dunk\", \"detail\": null, \"timestamp\": \"2026-03-26T02:54:58.620765+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_03",
+    "value": "b'{\"match_id\": \"m25_03\", \"home_team\": \"Man Utd\", \"away_team\": \"Arsenal\", \"home_score\": 0, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Old Trafford\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_03",
+    "value": "b'{\"event_id\": \"d1fbf448-c039-4a95-bdea-23e523f1d0f1\", \"match_id\": \"m25_03\", \"event_type\": \"substitution\", \"minute\": 32, \"team\": \"Man Utd\", \"player\": \"Hojlund\", \"detail\": null, \"timestamp\": \"2026-03-26T02:55:21.627693+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_01",
+    "value": "b'{\"match_id\": \"m25_01\", \"home_team\": \"Aston Villa\", \"away_team\": \"Newcastle\", \"home_score\": 0, \"away_score\": 1, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Villa Park\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_01",
+    "value": "b'{\"event_id\": \"93a84769-84f4-455b-ac23-365737991636\", \"match_id\": \"m25_01\", \"event_type\": \"goal\", \"minute\": 26, \"team\": \"Newcastle\", \"player\": \"Bruno\", \"detail\": \"Header\", \"timestamp\": \"2026-03-26T02:55:44.651574+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_03",
+    "value": "b'{\"match_id\": \"m25_03\", \"home_team\": \"Man Utd\", \"away_team\": \"Arsenal\", \"home_score\": 0, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Old Trafford\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_03",
+    "value": "b'{\"event_id\": \"2c32f5cd-6f4d-469f-b16a-34fb864c7246\", \"match_id\": \"m25_03\", \"event_type\": \"yellow_card\", \"minute\": 48, \"team\": \"Man Utd\", \"player\": \"Rashford\", \"detail\": null, \"timestamp\": \"2026-03-26T02:56:07.658442+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_04",
+    "value": "b'{\"match_id\": \"m25_04\", \"home_team\": \"Man City\", \"away_team\": \"West Ham\", \"home_score\": 1, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Etihad Stadium\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_04",
+    "value": "b'{\"event_id\": \"4795738d-6bf9-4143-ad74-a2dbab8b7e00\", \"match_id\": \"m25_04\", \"event_type\": \"goal\", \"minute\": 36, \"team\": \"Man City\", \"player\": \"Foden\", \"detail\": \"Free Kick\", \"timestamp\": \"2026-03-26T02:56:30.668048+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_05",
+    "value": "b'{\"match_id\": \"m25_05\", \"home_team\": \"Tottenham\", \"away_team\": \"Brighton\", \"home_score\": 0, \"away_score\": 0, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Tottenham Hotspur Stadium\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Expiring 6 record(s) for TopicPartition(topic='epl.matches', partition=0): 120009 ms has passed since batch creation"
+  },
+  {
+    "topic": "epl.matches",
+    "key": "m25_01",
+    "value": "b'{\"match_id\": \"m25_01\", \"home_team\": \"Aston Villa\", \"away_team\": \"Newcastle\", \"home_score\": 0, \"away_score\": 1, \"status\": \"live\", \"matchday\": 25, \"season\": \"2024/25\", \"venue\": \"Villa Park\", \"timestamp\": \"2026-03-26T02:53:56.957967+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  },
+  {
+    "topic": "epl.events",
+    "key": "m25_01",
+    "value": "b'{\"event_id\": \"7f0764db-ac6d-417d-8895-48a54b4c3ffd\", \"match_id\": \"m25_01\", \"event_type\": \"yellow_card\", \"minute\": 75, \"team\": \"Newcastle\", \"player\": \"Isak\", \"detail\": null, \"timestamp\": \"2026-03-26T02:57:01.631398+00:00\"}'",
+    "error": "KafkaTimeoutError: Timeout after waiting for 10 secs."
+  }
+]
