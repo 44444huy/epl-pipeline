@@ -1,0 +1,3 @@
+import base64
+encoded = "eyJldmVudF9pZCI6ICIyNTE5ZmY2MS04MTUyLTQxY2EtOTI4Yy04ZDI2MjIxOTEwYzMiLCAibWF0Y2hfaWQiOiAibTI5XzAzIiwgImV2ZW50X3R5cGUiOiAieWVsbG93X2NhcmQi"
+print(base64.b64decode(encoded).decode("utf-8"))

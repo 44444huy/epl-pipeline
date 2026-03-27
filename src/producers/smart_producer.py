@@ -177,7 +177,6 @@ def main():
     # Kiểm tra trận tiếp theo
     try:
         next_fixture = client.get_next_fixture()
-        logger.info(f"DEBUG next_fixture raw: {next_fixture}")
         if next_fixture:
             kickoff = next_fixture["fixture"]["date"]
             home = next_fixture["teams"]["home"]["name"]

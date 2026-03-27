@@ -1,0 +1,65 @@
+# ======================
+# ENV (QUAN TRỌNG)
+# ======================
+.env
+.env.*
+kafka/.env      ← thêm dòng này
+__pycache__/
+*.pyc
+dlq.json
+dlq_real.json
+dlq_smart.json
+*.log
+.idea/
+.vscode/
+
+# ======================
+# Python
+# ======================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual env
+venv/
+.venv/
+
+# ======================
+# IDE
+# ======================
+.vscode/
+.idea/
+
+# ======================
+# OS
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Docker
+# ======================
+*.pid
+*.seed
+*.log
+
+# ======================
+# Kafka / Data
+# ======================
+data/
+logs/
+*.tmp
+
+# ======================
+# Build / cache
+# ======================
+dist/
+build/
+*.egg-info/
+
+# ======================
+# Jupyter (nếu có)
+# ======================
+.ipynb_checkpoints/
