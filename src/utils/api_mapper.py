@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
+
+from typing import Optional
 from models.epl_models import Match, MatchEvent, Standing
 import logging
 
 logger = logging.getLogger(__name__)
 
-def map_fixture_to_match(fixture: dict) -> Match | None:
+def map_fixture_to_match(fixture: dict) -> Optional[Match]:
     """Map API fixture response → Match model"""
     try:
         f = fixture["fixture"]
@@ -42,7 +44,7 @@ SEASON = 2024
 def map_event_to_match_event(
     event: dict,
     fixture_id: str,
-) -> MatchEvent | None:
+) -> Optional[MatchEvent]:
     """Map API event response → MatchEvent model"""
     try:
         import uuid
@@ -95,7 +97,7 @@ def map_event_to_match_event(
         return None
 
 
-def map_standing_to_model(standing: dict) -> Standing | None:
+def map_standing_to_model(standing: dict) -> Optional[Standing]:
     """Map API standing response → Standing model"""
     try:
         g = standing["all"]

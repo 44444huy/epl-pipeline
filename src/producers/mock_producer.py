@@ -4,7 +4,7 @@ import random
 from datetime import datetime, timezone
 from kafka import KafkaProducer
 from sys import path
-path.append("D:\EPL_PROJECT\epl-pipeline\src")
+path.append("D:/EPL_PROJECT/epl-pipeline/src")
 from models.epl_models import Match, MatchEvent, Standing
 
 # ── Setup Producer ──────────────────────────────────────────────

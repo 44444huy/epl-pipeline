@@ -3,7 +3,7 @@
 # ======================
 .env
 .env.*
-kafka/.env      ← thêm dòng này
+kafka/.env    
 __pycache__/
 *.pyc
 dlq.json

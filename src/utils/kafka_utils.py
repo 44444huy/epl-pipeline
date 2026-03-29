@@ -37,7 +37,6 @@ def create_producer_with_retry(
 
                 # Đảm bảo không mất message
                 acks="all",                   # chờ tất cả replicas confirm
-                enable_idempotence=True,      # tránh duplicate khi retry
             )
             logger.info(f"✅ Kết nối Kafka thành công (attempt {attempt})")
             return producer

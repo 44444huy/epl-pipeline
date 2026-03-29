@@ -3,7 +3,7 @@ import time
 import logging
 from dotenv import load_dotenv
 import os
-
+from typing import Optional
 load_dotenv()
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class FootballAPIClient:
         })
         return data.get("response", [])
 
-    def get_next_fixture(self) -> dict | None:
+    def get_next_fixture(self) -> Optional[dict]:
         """
         Lấy trận tiếp theo.
         Requires paid plan — free plan sẽ trả về None thay vì crash.
