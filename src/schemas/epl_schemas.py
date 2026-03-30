@@ -65,6 +65,7 @@ STANDING_SCHEMA = {
         "points":         {"type": "integer", "minimum": 0},
         "season":         {"type": "string"},
         "timestamp":      {"type": "string"},
+        "snapshot_date":  {"type": "string"},
     },
     "additionalProperties": False,
 }

@@ -97,7 +97,7 @@ def map_event_to_match_event(
         return None
 
 
-def map_standing_to_model(standing: dict) -> Optional[Standing]:
+def map_standing_to_model(standing: dict, snapshot_date: str = None) -> Optional[Standing]:
     """Map API standing response → Standing model"""
     try:
         g = standing["all"]
@@ -114,6 +114,7 @@ def map_standing_to_model(standing: dict) -> Optional[Standing]:
             points=standing["points"],
             season=f"{SEASON}/{str(SEASON + 1)[-2:]}",
             timestamp=datetime.now(timezone.utc).isoformat(),
+            snapshot_date=snapshot_date or datetime.now(timezone.utc).date().isoformat(),
         )
     except (KeyError, TypeError) as e:
         logger.error(f"❌ map_standing_to_model failed: {e}")

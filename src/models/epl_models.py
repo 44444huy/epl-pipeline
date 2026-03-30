@@ -51,7 +51,8 @@ class Standing:
     goal_diff:     int
     points:        int
     season:        str
-    timestamp:     str
+    timestamp:     str        # thời điểm snapshot được lấy (real-time)
+    snapshot_date: str = ""        # execution_date của DAG run (context['ds'])
 
     def to_json(self) -> bytes:
         return json.dumps(asdict(self)).encode("utf-8")

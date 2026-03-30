@@ -9,20 +9,29 @@ import json
 
 client = FootballAPIClient()
 
-# Test 1: Standings
-print("=== STANDINGS ===")
-standings = client.get_standings()
-for s in standings[:5]:  # top 5
-    standing = map_standing_to_model(s)
-    if standing:
-        print(f"  {standing.rank}. {standing.team} — {standing.points} pts")
+# # Test 1: Standings
+# print("=== STANDINGS ===")
+# standings = client.get_standings()
+# for s in standings[:5]:  # top 5
+#     standing = map_standing_to_model(s)
+#     if standing:
+#         print(f"  {standing.rank}. {standing.team} — {standing.points} pts")
 
-# Test 2: Fixtures matchday 29
-print("\n=== FIXTURES Matchday 29 ===")
-fixtures = client.get_fixtures_by_matchday(29)
-for f in fixtures[:3]:
-    match = map_fixture_to_match(f)
-    if match:
-        print(f"  {match.home_team} vs {match.away_team} [{match.status}]")
+# # Test 2: Fixtures matchday 29
+# print("\n=== FIXTURES Matchday 29 ===")
+# fixtures = client.get_fixtures_by_matchday(29)
+# for f in fixtures[:3]:
+#     match = map_fixture_to_match(f)
+#     if match:
+#         print(f"  {match.home_team} vs {match.away_team} [{match.status}]")
 
-print(f"\n📊 Requests dùng: {client.request_count}")
+# print(f"\n📊 Requests dùng: {client.request_count}")
+
+
+data = client._get("standings", params={
+    "league": 39,
+    "season": 2024,
+    "date": "2026-03-30"   # thử truyền date vào
+})
+print(data.get("errors"))
+print(len(data.get("response", [])))

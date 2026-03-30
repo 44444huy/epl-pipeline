@@ -45,6 +45,11 @@ services:
 
   airflow-webserver:
     <<: *airflow-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
     container_name: airflow-webserver
     command: webserver
     ports:
@@ -57,6 +62,11 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
     container_name: airflow-scheduler
     command: scheduler
     restart: always
