@@ -56,7 +56,7 @@ with DAG(
 
             count = 0
             for raw in standings:
-                standing = map_standing_to_model(raw)
+                standing = map_standing_to_model(raw,snapshot_date=context['ds'])
                 if standing:
                     safe_send_validated(
                         producer, "epl.standings",
