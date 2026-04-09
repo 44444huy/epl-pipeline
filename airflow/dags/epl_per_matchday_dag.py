@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 import logging
+import os
 import sys
 
 sys.path.insert(0, "/opt/airflow/src")
@@ -40,7 +41,7 @@ def create_dag(matchday: int) -> DAG:
 
         client = FootballAPIClient()
         producer = create_producer_with_retry(
-            bootstrap_servers="host.docker.internal:9092"
+            bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092")
         )
         dlq = []
         fixtures = client.get_fixtures_by_matchday(matchday)
@@ -70,7 +71,7 @@ def create_dag(matchday: int) -> DAG:
 
         client = FootballAPIClient()
         producer = create_producer_with_retry(
-            bootstrap_servers="host.docker.internal:9092"
+            bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092")
         )
         dlq = []
         fixtures = client.get_fixtures_by_matchday(matchday)

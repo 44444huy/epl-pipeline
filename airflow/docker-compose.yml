@@ -8,7 +8,8 @@ x-airflow-common: &airflow-common
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CORE__FERNET_KEY: 'ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg='
+    AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+    KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
@@ -40,7 +41,7 @@ services:
   airflow-init:
     <<: *airflow-common
     container_name: airflow-init
-    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname EPL --lastname Admin --role Admin --email admin@epl.com"
+    command: bash -c "airflow db migrate && airflow users create --username admin --password $${AIRFLOW_ADMIN_PASSWORD:-admin} --firstname EPL --lastname Admin --role Admin --email admin@epl.com"
     restart: on-failure
 
   airflow-webserver:
@@ -73,3 +74,8 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  default:
+    name: epl-network
+    external: true

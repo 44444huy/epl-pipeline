@@ -3,6 +3,7 @@ from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
 import json
 import logging
+import os
 import time
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ class KafkaProducerHook(BaseHook):
     Quản lý connection lifecycle, tái sử dụng được trong nhiều tasks.
     
     Usage:
-        hook = KafkaProducerHook(bootstrap_servers="host.docker.internal:9092")
+        hook = KafkaProducerHook()
         with hook.get_producer() as producer:
             producer.send("topic", key=b"key", value=b"value")
     """
@@ -25,12 +26,14 @@ class KafkaProducerHook(BaseHook):
 
     def __init__(
         self,
-        bootstrap_servers: str = "host.docker.internal:9092",
+        bootstrap_servers: str = None,
         max_retries: int = 5,
         retry_delay: int = 5,
     ):
         super().__init__()
-        self.bootstrap_servers = bootstrap_servers
+        self.bootstrap_servers = bootstrap_servers or os.environ.get(
+            "KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092"
+        )
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self._producer = None

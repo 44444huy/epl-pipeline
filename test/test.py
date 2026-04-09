@@ -1,3 +1,10 @@
-import base64
-encoded = "eyJldmVudF9pZCI6ICIyNTE5ZmY2MS04MTUyLTQxY2EtOTI4Yy04ZDI2MjIxOTEwYzMiLCAibWF0Y2hfaWQiOiAibTI5XzAzIiwgImV2ZW50X3R5cGUiOiAieWVsbG93X2NhcmQi"
-print(base64.b64decode(encoded).decode("utf-8"))
+import pandas as pd
+
+# Đọc file parquet
+df = pd.read_parquet(r'D:\Downloads\part-00000-a895e3bc-b167-447a-af81-b8947a600fd5.c000.snappy.parquet')
+
+# Xem 5 dòng đầu tiên
+print(df.head(20))
+
+# Xem cấu trúc các cột (Schema)
+print(df.info())

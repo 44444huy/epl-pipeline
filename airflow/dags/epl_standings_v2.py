@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from airflow import DAG
+import os
 
 default_args = {
     "owner": "epl-pipeline",
@@ -24,7 +25,7 @@ with DAG(
 
     publish_standings = EPLStandingsToKafkaOperator(
         task_id="publish_standings",
-        kafka_servers="host.docker.internal:9092",
+        kafka_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092"),
         topic="epl.standings",
         league_id=39,
         season=2024,

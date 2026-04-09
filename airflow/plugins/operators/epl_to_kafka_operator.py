@@ -1,6 +1,7 @@
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 import logging
+import os
 import sys
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ class EPLStandingsToKafkaOperator(BaseOperator):
     Usage trong DAG:
         publish_standings = EPLStandingsToKafkaOperator(
             task_id="publish_standings",
-            kafka_servers="host.docker.internal:9092",
+            kafka_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092"),
             topic="epl.standings",
             league_id=39,
             season=2024,
@@ -26,14 +27,16 @@ class EPLStandingsToKafkaOperator(BaseOperator):
     @apply_defaults
     def __init__(
         self,
-        kafka_servers: str = "host.docker.internal:9092",
+        kafka_servers: str = None,
         topic: str = "epl.standings",
         league_id: int = 39,
         season: int = 2024,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.kafka_servers = kafka_servers
+        self.kafka_servers = kafka_servers or os.environ.get(
+            "KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092"
+        )
         self.topic = topic
         self.league_id = league_id
         self.season = season

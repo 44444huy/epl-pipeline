@@ -1,5 +1,6 @@
 import sys
-sys.path.append("D:/EPL_PROJECT/epl-pipeline/src")
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from models.epl_models import Match, MatchEvent, Standing
 from datetime import datetime, timezone

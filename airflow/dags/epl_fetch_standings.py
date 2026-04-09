@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 import logging
+import os
 import sys
 
 sys.path.insert(0, "/opt/airflow/src")
@@ -27,7 +28,8 @@ with DAG(
     def check_kafka(**context):
         from kafka import KafkaProducer
         try:
-            p = KafkaProducer(bootstrap_servers="host.docker.internal:9092")
+            kafka_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092")
+            p = KafkaProducer(bootstrap_servers=kafka_servers)
             p.close()
             logger.info("✅ Kafka OK")
         except Exception as e:
@@ -44,7 +46,7 @@ with DAG(
 
         client = FootballAPIClient()
         producer = create_producer_with_retry(
-            bootstrap_servers="host.docker.internal:9092"
+            bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092")
         )
         dlq = []
 

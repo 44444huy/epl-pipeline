@@ -3,8 +3,9 @@ import uuid
 import random
 from datetime import datetime, timezone
 from kafka import KafkaProducer
-from sys import path
-path.append("D:/EPL_PROJECT/epl-pipeline/src")
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from models.epl_models import Match, MatchEvent, Standing
 
 # ── Setup Producer ──────────────────────────────────────────────

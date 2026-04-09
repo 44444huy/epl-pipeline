@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.utils.trigger_rule import TriggerRule
 import logging
+import os
 import sys
 
 sys.path.insert(0, "/opt/airflow")
@@ -63,7 +64,7 @@ with DAG(
         try:
             from kafka import KafkaProducer
             p = KafkaProducer(
-                bootstrap_servers="host.docker.internal:9092",
+                bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092"),
                 request_timeout_ms=5000,
             )
             p.close()
@@ -106,7 +107,7 @@ with DAG(
             raise ValueError("Empty standings — triggering retry")
 
         producer = create_producer_with_retry(
-            bootstrap_servers="host.docker.internal:9092"
+            bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "host.docker.internal:9092")
         )
         dlq = []
         count = 0

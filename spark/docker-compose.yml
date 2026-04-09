@@ -1,0 +1,51 @@
+version: '3.8'
+
+# Spark standalone cluster cho EPL pipeline
+# Chạy: docker compose -f spark/docker-compose.yml up -d
+#
+# Spark UI: http://localhost:4040 (khi có job chạy)
+# Spark Master UI: http://localhost:9090
+
+services:
+
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: spark-master
+    environment:
+      SPARK_MODE: master
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: 7077
+      SPARK_MASTER_WEBUI_PORT: 9090
+    ports:
+      - "9090:9090"    # Spark Master UI
+      - "7077:7077"    # Spark Master port
+      - "4040:4040"    # Spark Application UI
+    volumes:
+      - ../src/spark:/opt/spark-apps     # mount Spark jobs
+      - spark-data:/opt/spark-data       # output data
+    networks:
+      - epl-network
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_CORES: 2
+    volumes:
+      - ../src/spark:/opt/spark-apps
+      - spark-data:/opt/spark-data
+    networks:
+      - epl-network
+
+volumes:
+  spark-data:
+
+networks:
+  epl-network:
+    name: epl-network
+    external: true
