@@ -209,6 +209,11 @@ class GlueCatalogManager:
             if not values:
                 continue
 
+            # Skip Hive default partitions (null values)
+            if "__HIVE_DEFAULT_PARTITION__" in partition_path:
+                logger.debug(f"  Skipping default partition: {partition_path}")
+                continue
+
             # Skip paths with wrong number of partition values
             # e.g. year=2026/month=04/day=06/season=.../matchday=... has 5 values but only 2 keys
             if expected_keys and len(values) != expected_keys:

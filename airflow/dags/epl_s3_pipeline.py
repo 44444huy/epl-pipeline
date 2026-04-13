@@ -1,14 +1,16 @@
 """
-EPL S3 Pipeline DAG — Day 21/22
+EPL S3 Pipeline DAG — Day 21-23
 
-Full pipeline: Kafka → Spark → S3 → Glue Catalog → Athena-ready
+Full pipeline: Kafka → Spark → S3 → Glue Catalog → Athena → Data Quality
 
 Flow:
-  check_s3 → spark_transform → verify_s3 → update_glue_catalog → test_athena → summary
+  check_s3 → spark_transform → verify_s3 → update_glue_catalog
+    → data_quality_checks → test_athena → summary
 
 Spark ghi trực tiếp S3 qua s3a://.
 Glue Catalog tạo bằng boto3 API (free).
 Athena query trực tiếp từ Glue tables.
+Data quality checks validate row counts, duplicates, freshness, schema.
 
 S3 Layout:
   s3://epl-pipeline-processed-nqh/
@@ -49,10 +51,65 @@ with DAG(
     schedule_interval=None,
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["epl", "spark", "s3", "glue", "athena", "day22"],
+    tags=["epl", "spark", "s3", "glue", "athena", "dq", "day23"],
 ) as dag:
 
-    # ── Task 1: Check S3 connection ─────────────────────────────
+    # ── Task 1: Produce data to Kafka ────────────────────────────
+    def produce_to_kafka(**context):
+        """Produce EPL data to Kafka: real API if available, mock fallback.
+        Runs one batch (not infinite loop), suitable for Airflow task.
+        """
+        from producers.smart_producer import run_real_mode, run_mock_mode
+        from producers.robust_producer import generate_matches
+        from utils.kafka_utils import create_producer_with_retry
+        from utils.football_api import FootballAPIClient
+
+        client = FootballAPIClient()
+        producer = create_producer_with_retry(bootstrap_servers="kafka:29092")
+        dlq = []
+        stats = {"mode": None, "messages": 0}
+
+        try:
+            # Try real mode first
+            live_count = run_real_mode(client, producer, dlq, poll_count=1)
+            stats["mode"] = "real"
+            stats["messages"] = live_count
+
+            if live_count == 0:
+                # No live matches → run mock for 1 batch
+                logger.info("No live matches — running mock producer")
+                mock_matches = generate_matches(matchday=29)
+                for tick in range(1, 7):
+                    still_live = run_mock_mode(mock_matches, producer, dlq, tick)
+                    if not still_live:
+                        break
+                stats["mode"] = "mock"
+                stats["messages"] = tick
+        except Exception as e:
+            logger.warning(f"Real mode failed: {e}, falling back to mock")
+            mock_matches = generate_matches(matchday=29)
+            for tick in range(1, 7):
+                still_live = run_mock_mode(mock_matches, producer, dlq, tick)
+                if not still_live:
+                    break
+            stats["mode"] = "mock_fallback"
+            stats["messages"] = tick
+        finally:
+            producer.flush()
+            producer.close()
+
+        logger.info(f"Producer done: {stats}")
+        if dlq:
+            logger.warning(f"DLQ: {dlq}")
+        context["ti"].xcom_push(key="producer_stats", value=str(stats))
+
+    t_produce = PythonOperator(
+        task_id="produce_to_kafka",
+        python_callable=produce_to_kafka,
+        provide_context=True,
+    )
+
+    # ── Task 2: Check S3 connection ─────────────────────────────
     def check_s3_connection(**context):
         from utils.s3_uploader import S3Uploader
         uploader = S3Uploader(bucket=S3_BUCKET)
@@ -67,7 +124,7 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 2: Spark Transform → S3 directly ──────────────────
+    # ── Task 3: Spark Transform → S3 directly ──────────────────
     SPARK_SUBMIT_CMD = """
     SPARK_SUBMIT=$(python3 -c "import pyspark, os; print(os.path.join(os.path.dirname(pyspark.__file__), 'bin', 'spark-submit'))")
     PYSPARK_PYTHON=python3 $SPARK_SUBMIT \
@@ -128,61 +185,105 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 5: Test Athena Query ──────────────────────────────
-    def test_athena_query(**context):
-        """Run a test query on Athena to verify everything works."""
-        import boto3
-        import time
+    # ── Task 5: Create Silver Views ──────────────────────────────
+    def create_silver_views(**context):
+        """Create deduped Silver layer views (v_matches, v_standings)."""
+        from utils.athena_queries import AthenaQueryManager
 
-        athena = boto3.client("athena", region_name=os.environ.get("AWS_REGION", "ap-southeast-1"))
-
-        # Test query: count matches
-        query = f"SELECT COUNT(*) as total_matches FROM {GLUE_DATABASE}.matches"
-        logger.info(f"Running Athena query: {query}")
-
-        response = athena.start_query_execution(
-            QueryString=query,
-            QueryExecutionContext={"Database": GLUE_DATABASE},
-            ResultConfiguration={"OutputLocation": ATHENA_OUTPUT},
+        aq = AthenaQueryManager(
+            database=GLUE_DATABASE,
+            output_location=ATHENA_OUTPUT,
         )
-        query_id = response["QueryExecutionId"]
-        logger.info(f"Query ID: {query_id}")
+        results = aq.create_views()
+        logger.info(f"Silver views: {results}")
+        context["ti"].xcom_push(key="views_created", value=str(results))
 
-        # Wait for query to complete (max 60 seconds)
-        for i in range(30):
-            result = athena.get_query_execution(QueryExecutionId=query_id)
-            state = result["QueryExecution"]["Status"]["State"]
-
-            if state == "SUCCEEDED":
-                # Get results
-                results = athena.get_query_results(QueryExecutionId=query_id)
-                rows = results["ResultSet"]["Rows"]
-                if len(rows) > 1:
-                    count = rows[1]["Data"][0]["VarCharValue"]
-                    logger.info(f"Athena result: {count} total matches")
-                    context["ti"].xcom_push(key="athena_match_count", value=count)
-                return
-
-            elif state in ("FAILED", "CANCELLED"):
-                reason = result["QueryExecution"]["Status"].get("StateChangeReason", "unknown")
-                logger.error(f"Athena query {state}: {reason}")
-                raise Exception(f"Athena query failed: {reason}")
-
-            time.sleep(2)
-
-        raise Exception("Athena query timeout after 60s")
-
-    t_athena = PythonOperator(
-        task_id="test_athena_query",
-        python_callable=test_athena_query,
+    t_views = PythonOperator(
+        task_id="create_silver_views",
+        python_callable=create_silver_views,
         provide_context=True,
     )
 
-    # ── Task 6: Pipeline Summary ────────────────────────────────
+    # ── Task 6: Data Quality Checks ──────────────────────────────
+    def data_quality_checks(**context):
+        """Run data quality checks via Athena: row counts, duplicates, freshness, schema."""
+        from utils.athena_queries import AthenaQueryManager
+
+        aq = AthenaQueryManager(
+            database=GLUE_DATABASE,
+            output_location=ATHENA_OUTPUT,
+        )
+
+        checks = aq.run_all_checks(min_matches=1, max_age_days=7)
+        context["ti"].xcom_push(key="dq_results", value=str(checks))
+        context["ti"].xcom_push(key="dq_passed", value=checks["all_passed"])
+        context["ti"].xcom_push(key="dq_cost", value=str(checks["cost"]))
+
+        if not checks["all_passed"]:
+            failed = [
+                name for name, check in checks.items()
+                if isinstance(check, dict) and not check.get("passed", check.get("all_passed", True))
+            ]
+            logger.warning(f"Data quality checks FAILED: {failed}")
+            # Don't raise — let pipeline continue but flag the issue
+        else:
+            logger.info("All data quality checks PASSED")
+
+    t_dq = PythonOperator(
+        task_id="data_quality_checks",
+        python_callable=data_quality_checks,
+        provide_context=True,
+    )
+
+    # ── Task 7: Athena Analytics Queries ───────────────────────
+    def test_athena_analytics(**context):
+        """Run analytics queries on Silver views (deduped data)."""
+        from utils.athena_queries import AthenaQueryManager
+
+        aq = AthenaQueryManager(
+            database=GLUE_DATABASE,
+            output_location=ATHENA_OUTPUT,
+        )
+
+        # Count matches
+        r = aq.count_matches(season="2024/25")
+        match_count = r["rows"][0]["total"] if r["rows"] else "0"
+        logger.info(f"Total matches: {match_count}")
+        context["ti"].xcom_push(key="athena_match_count", value=match_count)
+
+        # Home vs Away stats
+        r = aq.get_home_vs_away_stats(season="2024/25")
+        for row in r["rows"]:
+            logger.info(f"  {row['result']}: {row['match_count']} ({row['percentage']}%)")
+
+        # League table (top 5)
+        r = aq.get_league_table(season="2024/25")
+        for row in r["rows"][:5]:
+            logger.info(f"  #{row['rank']} {row['team']} - {row['points']} pts")
+
+        # Cost summary
+        cost = aq.get_cost_summary()
+        logger.info(
+            f"Athena cost: {cost['query_count']} queries, "
+            f"{cost['total_mb_scanned']:.2f} MB scanned, "
+            f"~${cost['estimated_cost_usd']:.6f}"
+        )
+        context["ti"].xcom_push(key="athena_cost", value=str(cost))
+
+    t_athena = PythonOperator(
+        task_id="test_athena_analytics",
+        python_callable=test_athena_analytics,
+        provide_context=True,
+    )
+
+    # ── Task 8: Pipeline Summary ────────────────────────────────
     def pipeline_summary(**context):
         ti = context["ti"]
         s3_count = ti.xcom_pull(task_ids="verify_s3", key="s3_object_count") or 0
-        athena_count = ti.xcom_pull(task_ids="test_athena_query", key="athena_match_count") or "N/A"
+        athena_count = ti.xcom_pull(task_ids="test_athena_analytics", key="athena_match_count") or "N/A"
+        dq_passed = ti.xcom_pull(task_ids="data_quality_checks", key="dq_passed")
+        dq_cost = ti.xcom_pull(task_ids="data_quality_checks", key="dq_cost") or "N/A"
+        athena_cost = ti.xcom_pull(task_ids="test_athena_analytics", key="athena_cost") or "N/A"
 
         logger.info("=" * 60)
         logger.info("  EPL Full Pipeline Summary")
@@ -191,7 +292,10 @@ with DAG(
         logger.info(f"  S3 Objects: {s3_count}")
         logger.info(f"  Glue Database: {GLUE_DATABASE}")
         logger.info(f"  Athena match count: {athena_count}")
-        logger.info(f"  Pipeline: Kafka -> Spark -> S3 -> Glue -> Athena")
+        logger.info(f"  Data Quality: {'ALL PASSED' if dq_passed else 'SOME FAILED'}")
+        logger.info(f"  DQ Cost: {dq_cost}")
+        logger.info(f"  Analytics Cost: {athena_cost}")
+        logger.info(f"  Pipeline: Kafka -> Spark -> S3 -> Glue -> Views -> DQ -> Athena")
         logger.info("=" * 60)
 
     t_summary = PythonOperator(
@@ -201,4 +305,5 @@ with DAG(
     )
 
     # ── DAG Flow ────────────────────────────────────────────────
-    t_check_s3 >> t_spark >> t_verify >> t_glue >> t_athena >> t_summary
+    # Producer + S3 check run in parallel, then Spark reads from Kafka
+    [t_produce, t_check_s3] >> t_spark >> t_verify >> t_glue >> t_views >> t_dq >> t_athena >> t_summary

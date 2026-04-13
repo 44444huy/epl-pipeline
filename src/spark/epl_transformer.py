@@ -175,6 +175,7 @@ def transform_standings(df: DataFrame) -> DataFrame:
         )
         .filter(F.col("row_num") == 1)
         .drop("row_num")
+        .filter(F.col("snapshot_date").isNotNull())
     )
 
 
