@@ -54,58 +54,25 @@ with DAG(
     tags=["epl", "spark", "s3", "glue", "athena", "dq", "day23"],
 ) as dag:
 
-    # ── Task 1: Produce data to Kafka ────────────────────────────
-    def produce_to_kafka(**context):
-        """Produce EPL data to Kafka: real API if available, mock fallback.
-        Runs one batch (not infinite loop), suitable for Airflow task.
-        """
-        from producers.smart_producer import run_real_mode, run_mock_mode
-        from producers.robust_producer import generate_matches
-        from utils.kafka_utils import create_producer_with_retry
-        from utils.football_api import FootballAPIClient
+    # ── Task 1: Check Kafka connectivity ──────────────────────────
+    def check_kafka_data(**context):
+        """Check Kafka broker is reachable. Data should exist from backfill DAG."""
+        import socket
 
-        client = FootballAPIClient()
-        producer = create_producer_with_retry(bootstrap_servers="kafka:29092")
-        dlq = []
-        stats = {"mode": None, "messages": 0}
-
+        host, port = "kafka", 29092
         try:
-            # Try real mode first
-            live_count = run_real_mode(client, producer, dlq, poll_count=1)
-            stats["mode"] = "real"
-            stats["messages"] = live_count
-
-            if live_count == 0:
-                # No live matches → run mock for 1 batch
-                logger.info("No live matches — running mock producer")
-                mock_matches = generate_matches(matchday=29)
-                for tick in range(1, 7):
-                    still_live = run_mock_mode(mock_matches, producer, dlq, tick)
-                    if not still_live:
-                        break
-                stats["mode"] = "mock"
-                stats["messages"] = tick
+            sock = socket.create_connection((host, port), timeout=10)
+            sock.close()
+            logger.info(f"Kafka broker {host}:{port} is reachable")
         except Exception as e:
-            logger.warning(f"Real mode failed: {e}, falling back to mock")
-            mock_matches = generate_matches(matchday=29)
-            for tick in range(1, 7):
-                still_live = run_mock_mode(mock_matches, producer, dlq, tick)
-                if not still_live:
-                    break
-            stats["mode"] = "mock_fallback"
-            stats["messages"] = tick
-        finally:
-            producer.flush()
-            producer.close()
+            raise Exception(f"Cannot connect to Kafka {host}:{port}: {e}")
 
-        logger.info(f"Producer done: {stats}")
-        if dlq:
-            logger.warning(f"DLQ: {dlq}")
-        context["ti"].xcom_push(key="producer_stats", value=str(stats))
+        logger.info("Ensure backfill DAG has been run before this pipeline!")
+        context["ti"].xcom_push(key="kafka_check", value="reachable")
 
-    t_produce = PythonOperator(
-        task_id="produce_to_kafka",
-        python_callable=produce_to_kafka,
+    t_check_kafka = PythonOperator(
+        task_id="check_kafka_data",
+        python_callable=check_kafka_data,
         provide_context=True,
     )
 
@@ -306,4 +273,4 @@ with DAG(
 
     # ── DAG Flow ────────────────────────────────────────────────
     # Producer + S3 check run in parallel, then Spark reads from Kafka
-    [t_produce, t_check_s3] >> t_spark >> t_verify >> t_glue >> t_views >> t_dq >> t_athena >> t_summary
+    [t_check_kafka, t_check_s3] >> t_spark >> t_verify >> t_glue >> t_views >> t_dq >> t_athena >> t_summary
