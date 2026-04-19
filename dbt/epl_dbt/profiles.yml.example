@@ -1,0 +1,38 @@
+# profiles.yml — dbt-athena connection config
+#
+# File này để REFERENCE trong repo.
+# File thật phải đặt tại: ~/.dbt/profiles.yml
+#
+# Setup:
+#   mkdir -p ~/.dbt
+#   cp dbt/epl_dbt/profiles.yml ~/.dbt/profiles.yml
+#   # Thay env vars bằng giá trị thật hoặc để dbt đọc từ env
+
+epl_athena:
+  target: dev
+  outputs:
+    dev:
+      type: athena
+      region_name: "{{ env_var('AWS_REGION', 'ap-southeast-1') }}"
+
+      # S3 bucket lưu kết quả query Athena (temporary + final)
+      s3_staging_dir: "s3://epl-pipeline-processed-nqh/athena-results/"
+
+      # S3 prefix cho dbt model outputs (tables)
+      s3_data_dir: "s3://epl-pipeline-processed-nqh/dbt/"
+
+      # Glue database nơi dbt tạo models
+      schema: epl_gold
+
+      # AWS Data Catalog (luôn là awsdatacatalog)
+      database: awsdatacatalog
+
+      # AWS credentials (đọc từ env, không hardcode)
+      aws_access_key_id: "{{ env_var('AWS_ACCESS_KEY_ID') }}"
+      aws_secret_access_key: "{{ env_var('AWS_SECRET_ACCESS_KEY') }}"
+
+      # Athena workgroup (default nếu không set)
+      work_group: primary
+
+      # Threads — Athena query parallel limit
+      threads: 4

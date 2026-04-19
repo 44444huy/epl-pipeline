@@ -1,0 +1,61 @@
+version: 2
+
+sources:
+  - name: epl_bronze
+    description: |
+      **Bronze layer** — raw EPL data landed by the streaming pipeline.
+
+      Flow: Football-API → Airflow (backfill/daily DAGs) → Kafka topics → Spark Structured batch → S3 Parquet → Glue Catalog → **queried here via Athena**.
+
+      Tables are partitioned on S3 (matches by season+matchday, standings by season+snapshot_date).
+      May contain duplicates (score updates, backfill re-runs) — dedup happens in staging layer.
+    database: awsdatacatalog
+    schema: epl_db
+    loaded_at_field: event_time
+    freshness:
+      warn_after: {count: 2, period: day}
+      error_after: {count: 7, period: day}
+    tables:
+      - name: matches
+        description: "Raw match results. Partitioned by `season`, `matchday`. ~380 rows per season (38 matchdays × 10 matches)."
+        columns:
+          - name: match_id
+            description: "Unique match key, format `{fixture_id}_{home}_{away}`."
+          - name: home_team
+          - name: away_team
+          - name: home_score
+          - name: away_score
+          - name: status
+            description: "`finished` | `live` | `not_started` | `postponed`."
+          - name: venue
+          - name: total_goals
+            description: "Derived by Spark transform."
+          - name: result
+            description: "`home_win` | `away_win` | `draw` — derived by Spark."
+          - name: season
+            description: "Partition key, format `YYYY/YY`."
+          - name: matchday
+            description: "Partition key, integer 1–38."
+          - name: event_time
+            description: "Kafka produce timestamp."
+
+      - name: standings
+        description: "Raw league table snapshots. Partitioned by `season`, `snapshot_date`. One snapshot per team per day."
+        columns:
+          - name: team
+          - name: rank
+          - name: played
+          - name: won
+          - name: drawn
+          - name: lost
+          - name: goals_for
+          - name: goals_against
+          - name: goal_diff
+          - name: points
+          - name: win_rate
+            description: "Derived by Spark: won/played."
+          - name: season
+            description: "Partition key."
+          - name: snapshot_date
+            description: "Partition key = Airflow `ds` (execution date)."
+          - name: event_time

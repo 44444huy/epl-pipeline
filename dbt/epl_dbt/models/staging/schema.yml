@@ -1,0 +1,110 @@
+version: 2
+
+models:
+  - name: stg_matches
+    description: |
+      **Silver layer** — deduped EPL match results.
+      One row per `match_id` (latest snapshot by `event_time`).
+
+      Pipeline: Football-API → Kafka (`epl.matches` topic) → Spark → S3 Parquet (bronze) → **this model**.
+      Bronze có thể chứa duplicates do Smart Producer gửi update (score changes live) và backfill DAG.
+
+      Materialized as **view** — không ghi S3, đọc fresh từ bronze mỗi lần query.
+    columns:
+      - name: match_id
+        description: "Primary key. Format: `{fixture_id}_{home_team}_{away_team}`. Unique per match."
+        tests:
+          - unique
+          - not_null
+      - name: home_team
+        description: "Home team name (official EPL name, e.g. 'Arsenal', 'Manchester United')."
+        tests:
+          - not_null
+      - name: away_team
+        description: "Away team name."
+        tests:
+          - not_null
+      - name: home_score
+        description: "Final goals scored by home team."
+        tests:
+          - not_null
+      - name: away_score
+        description: "Final goals scored by away team."
+        tests:
+          - not_null
+      - name: total_goals
+        description: "Derived: home_score + away_score. Computed in Spark transform."
+      - name: result
+        description: "Match outcome derived from scores: `home_win` / `away_win` / `draw`."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['home_win', 'away_win', 'draw']
+      - name: status
+        description: "Match lifecycle state from Football-API: `finished` | `live` | `not_started` | `postponed`."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['finished', 'live', 'not_started', 'postponed']
+      - name: venue
+        description: "Stadium name (e.g. 'Emirates Stadium'). Nullable — may be 'Unknown' for missing API data."
+      - name: season
+        description: "EPL season string, format `YYYY/YY` (e.g. `2024/25`)."
+        tests:
+          - not_null
+      - name: matchday
+        description: "Matchday/gameweek number 1–38 (integer). Each team plays 1 fixture per matchday."
+        tests:
+          - not_null
+      - name: event_time
+        description: "Timestamp when the record was produced to Kafka (UTC). Used for dedup ordering."
+
+  - name: stg_standings
+    description: |
+      **Silver layer** — deduped EPL league table snapshots.
+      One row per `team` + `snapshot_date` (latest by `event_time`).
+
+      Pipeline: Football-API → Kafka (`epl.standings`) → Spark → S3 → **this model**.
+      Standings được fetch mỗi ngày → nhiều snapshots across time → dedup giữ snapshot mới nhất trong ngày.
+
+      Materialized as **view**.
+    columns:
+      - name: team
+        description: "Team name."
+        tests:
+          - not_null
+      - name: rank
+        description: "League position 1 (leader) – 20 (bottom)."
+        tests:
+          - not_null
+      - name: played
+        description: "Total matches played so far this season."
+      - name: won
+        description: "Wins count."
+      - name: drawn
+        description: "Draws count."
+      - name: lost
+        description: "Losses count."
+      - name: goals_for
+        description: "Total goals scored by team this season."
+      - name: goals_against
+        description: "Total goals conceded."
+      - name: goal_diff
+        description: "`goals_for - goals_against`. Tiebreaker for rank."
+      - name: points
+        description: "League points (win=3, draw=1, loss=0). Primary sort for rank."
+        tests:
+          - not_null
+      - name: win_rate
+        description: "Derived in Spark: `round(won / played, 3)`. Range 0.0–1.0."
+      - name: season
+        description: "Season string `YYYY/YY`."
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Date of standings snapshot (Airflow `ds`). One snapshot per team per day."
+        tests:
+          - not_null
+      - name: event_time
+        description: "Kafka timestamp. Used for dedup within same snapshot_date."

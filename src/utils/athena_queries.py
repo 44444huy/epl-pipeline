@@ -295,53 +295,10 @@ class AthenaQueryManager:
         """
         return self.execute(query)
 
-    # ── Silver Layer Views (dedup + clean) ───────────────────────
-
-    def create_views(self) -> dict:
-        """Create Silver layer views with dedup logic.
-
-        Bronze (raw tables): matches, standings — may contain duplicates
-        Silver (views): v_matches, v_standings — deduped, query-ready
-        """
-        results = {}
-
-        # v_matches: dedup by match_id, keep latest record
-        r = self.execute("""
-        CREATE OR REPLACE VIEW v_matches AS
-        SELECT match_id, home_team, away_team, home_score, away_score,
-               status, venue, timestamp, event_time,
-               total_goals, result, season, matchday
-        FROM (
-            SELECT *, ROW_NUMBER() OVER (
-                PARTITION BY match_id ORDER BY event_time DESC
-            ) as rn
-            FROM matches
-        )
-        WHERE rn = 1
-        """, parse_rows=False)
-        results["v_matches"] = r["state"]
-        logger.info(f"Created view v_matches: {r['state']}")
-
-        # v_standings: dedup by team + snapshot_date, keep latest
-        r = self.execute("""
-        CREATE OR REPLACE VIEW v_standings AS
-        SELECT team, rank, played, won, drawn, lost,
-               goals_for, goals_against, goal_diff, points,
-               timestamp, event_time, win_rate, season, snapshot_date
-        FROM (
-            SELECT *, ROW_NUMBER() OVER (
-                PARTITION BY team, snapshot_date ORDER BY event_time DESC
-            ) as rn
-            FROM standings
-        )
-        WHERE rn = 1
-        """, parse_rows=False)
-        results["v_standings"] = r["state"]
-        logger.info(f"Created view v_standings: {r['state']}")
-
-        return results
-
     # ── Data Quality Checks ────────────────────────────────────────
+    # NOTE: Silver layer (dedup views) đã được chuyển sang dbt.
+    # dbt/epl_dbt/models/staging/ owns Silver transformation.
+    # athena_queries.py chỉ làm DQ checks và analytics queries.
 
     def check_row_counts(self, min_matches: int = 1, min_standings: int = 1) -> dict:
         """Verify minimum row counts exist."""

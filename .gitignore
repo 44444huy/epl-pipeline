@@ -64,3 +64,12 @@ build/
 # Jupyter (nếu có)
 # ======================
 .ipynb_checkpoints/
+
+# ======================
+# dbt
+# ======================
+**/profiles.yml       # credentials — không commit, để ở ~/.dbt/profiles.yml
+dbt/epl_dbt/target/
+dbt/epl_dbt/dbt_packages/
+dbt/epl_dbt/logs/
+**/.user.yml          # dbt anonymous telemetry UUID — unique per machine

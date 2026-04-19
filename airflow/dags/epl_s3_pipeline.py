@@ -152,26 +152,9 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 5: Create Silver Views ──────────────────────────────
-    def create_silver_views(**context):
-        """Create deduped Silver layer views (v_matches, v_standings)."""
-        from utils.athena_queries import AthenaQueryManager
-
-        aq = AthenaQueryManager(
-            database=GLUE_DATABASE,
-            output_location=ATHENA_OUTPUT,
-        )
-        results = aq.create_views()
-        logger.info(f"Silver views: {results}")
-        context["ti"].xcom_push(key="views_created", value=str(results))
-
-    t_views = PythonOperator(
-        task_id="create_silver_views",
-        python_callable=create_silver_views,
-        provide_context=True,
-    )
-
-    # ── Task 6: Data Quality Checks ──────────────────────────────
+    # ── Task 5: Data Quality Checks ──────────────────────────────
+    # NOTE: Silver views (v_matches, v_standings) đã được chuyển sang dbt.
+    # dbt run sau DAG này để tạo Silver + Gold layer.
     def data_quality_checks(**context):
         """Run data quality checks via Athena: row counts, duplicates, freshness, schema."""
         from utils.athena_queries import AthenaQueryManager
@@ -273,4 +256,4 @@ with DAG(
 
     # ── DAG Flow ────────────────────────────────────────────────
     # Producer + S3 check run in parallel, then Spark reads from Kafka
-    [t_check_kafka, t_check_s3] >> t_spark >> t_verify >> t_glue >> t_views >> t_dq >> t_athena >> t_summary
+    [t_check_kafka, t_check_s3] >> t_spark >> t_verify >> t_glue >> t_dq >> t_athena >> t_summary

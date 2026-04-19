@@ -272,11 +272,18 @@ class GlueCatalogManager:
         results["standings_table"] = self.create_standings_table(s3_base)
 
         # Add partitions
+        # FIX: phải scan subfolder riêng của từng table, nếu không add_partitions()
+        # sẽ quét chung processed/epl/ và register nhầm standings folders vào matches table
+        # (vì cả 2 đều có 2 partition keys với format "key=value/key=value")
+        s3_base_normalized = (
+            f"s3://{s3_base.split('//')[1]}" if s3_base.startswith("s3a://") else s3_base
+        ).rstrip("/")
+
         results["matches_partitions"] = self.add_partitions(
-            "matches", f"s3://{s3_base.split('//')[1]}" if s3_base.startswith("s3a://") else s3_base
+            "matches", f"{s3_base_normalized}/matches/"
         )
         results["standings_partitions"] = self.add_partitions(
-            "standings", f"s3://{s3_base.split('//')[1]}" if s3_base.startswith("s3a://") else s3_base
+            "standings", f"{s3_base_normalized}/standings/"
         )
 
         logger.info(f"Glue Catalog setup complete: {results}")

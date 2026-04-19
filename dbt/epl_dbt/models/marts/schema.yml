@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: mart_team_standings
+    description: |
+      **Gold layer** — final EPL league table (latest snapshot per team per season).
+
+      Analytics table ready for BI/dashboards. Adds derived metrics on top of silver:
+      - `win_pct` — win percentage (0–100 scale for dashboard display)
+      - `points_per_game` — efficiency metric, comparable across teams with different games played
+
+      Materialized as **table** (Parquet on S3, partitioned by season). One row per team per season.
+    columns:
+      - name: team
+        description: "Team name (unique within season)."
+        tests:
+          - not_null
+      - name: rank
+        description: "Final league position 1–20."
+        tests:
+          - not_null
+      - name: played
+        description: "Matches played."
+      - name: won
+        description: "Wins."
+      - name: drawn
+        description: "Draws."
+      - name: lost
+        description: "Losses."
+      - name: goals_for
+        description: "Goals scored."
+      - name: goals_against
+        description: "Goals conceded."
+      - name: goal_diff
+        description: "Goal difference (`goals_for - goals_against`)."
+      - name: points
+        description: "Total league points."
+        tests:
+          - not_null
+      - name: win_pct
+        description: "**Derived**: `round(won * 100.0 / played, 2)`. Win rate as percentage (0–100)."
+        tests:
+          - not_null
+      - name: points_per_game
+        description: "**Derived**: `round(points / played, 2)`. Normalized points efficiency."
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Date of the latest standings snapshot used."
+      - name: season
+        description: "Season `YYYY/YY`. **Partition key** on S3."
+        tests:
+          - not_null
+
+  - name: mart_match_results
+    description: |
+      **Gold layer** — finished matches enriched with analytics-ready derived columns.
+
+      Use cases:
+      - Head-to-head stats, home/away performance
+      - Goal-scoring trend analysis (high-scoring matches)
+      - Winner/loser aggregations
+
+      Filters `status = 'finished'` only. One row per match. Materialized as **table** (Parquet, partitioned by season).
+    columns:
+      - name: match_id
+        description: "Primary key. Inherited from silver."
+        tests:
+          - unique
+          - not_null
+      - name: home_team
+        description: "Home team name."
+      - name: away_team
+        description: "Away team name."
+      - name: home_score
+        description: "Home goals."
+      - name: away_score
+        description: "Away goals."
+      - name: total_goals
+        description: "`home_score + away_score`."
+        tests:
+          - not_null
+      - name: result
+        description: "Outcome: `home_win` / `away_win` / `draw`."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['home_win', 'away_win', 'draw']
+      - name: winner
+        description: "**Derived**: team name of winner, or `'draw'` if tied."
+      - name: loser
+        description: "**Derived**: team name of loser, or `'draw'` if tied."
+      - name: is_high_scoring
+        description: "**Derived boolean**: `total_goals >= 4`. Proxy for 'exciting' matches."
+        tests:
+          - not_null
+      - name: venue
+        description: "Stadium."
+      - name: matchday
+        description: "Gameweek 1–38."
+        tests:
+          - not_null
+      - name: event_time
+        description: "Kafka timestamp of the latest snapshot."
+      - name: season
+        description: "Season `YYYY/YY`. **Partition key** on S3."
+        tests:
+          - not_null

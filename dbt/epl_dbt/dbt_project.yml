@@ -1,0 +1,24 @@
+name: 'epl_dbt'
+version: '1.0.0'
+config-version: 2
+
+profile: 'epl_athena'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  epl_dbt:
+    staging:
+      +materialized: view        # Views — no S3 write, cheap
+      +schema: epl_staging
+    marts:
+      +materialized: table       # Tables — writes Parquet to S3, registers in Glue
+      +schema: epl_gold
+      +format: parquet
+      +s3_data_dir: "s3://epl-pipeline-processed-nqh/dbt/gold/"
+      +partitioned_by: ['season']
