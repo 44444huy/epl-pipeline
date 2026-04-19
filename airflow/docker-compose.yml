@@ -14,11 +14,14 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
     PYTHONPATH: /opt/airflow/src
+    DBT_PROFILES_DIR: /opt/airflow/dbt_profiles
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     - ../src:/opt/airflow/src
+    - ../dbt:/opt/airflow/dbt               # dbt project (models, dbt_project.yml)
+    - ./dbt_profiles:/opt/airflow/dbt_profiles  # profiles.yml (Athena connection)
   depends_on:
     postgres:
       condition: service_healthy

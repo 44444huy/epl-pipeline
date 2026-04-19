@@ -254,6 +254,31 @@ with DAG(
         provide_context=True,
     )
 
+    # ── Task 9: dbt transform (Silver + Gold) ──────────────────
+    # Sau khi bronze ready + DQ pass, dbt build Silver views + Gold tables.
+    # Mount paths: /opt/airflow/dbt (project) + /opt/airflow/dbt_profiles (DBT_PROFILES_DIR env var)
+    DBT_PROJECT_DIR = "/opt/airflow/dbt/epl_dbt"
+
+    t_dbt_run = BashOperator(
+        task_id="dbt_run",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --target dev",
+    )
+
+    t_dbt_test = BashOperator(
+        task_id="dbt_test",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --target dev",
+    )
+
     # ── DAG Flow ────────────────────────────────────────────────
-    # Producer + S3 check run in parallel, then Spark reads from Kafka
-    [t_check_kafka, t_check_s3] >> t_spark >> t_verify >> t_glue >> t_dq >> t_athena >> t_summary
+    # Bronze (Spark → S3 → Glue → DQ) → Silver+Gold (dbt) → Analytics → Summary
+    (
+        [t_check_kafka, t_check_s3]
+        >> t_spark
+        >> t_verify
+        >> t_glue
+        >> t_dq
+        >> t_dbt_run
+        >> t_dbt_test
+        >> t_athena
+        >> t_summary
+    )

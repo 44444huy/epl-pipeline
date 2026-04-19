@@ -5,4 +5,5 @@ pyspark==3.5.0
 boto3==1.34.0
 apache-airflow-providers-amazon==8.13.0
 apache-airflow-providers-apache-spark==4.3.0
-dbt-athena-community==1.8.3
+# dbt-athena-community KHÔNG cài ở đây (xung đột deps với Airflow 2.8.1:
+# protobuf, boto3, providers-amazon). Dockerfile cài dbt trong venv riêng /opt/dbt-venv.
