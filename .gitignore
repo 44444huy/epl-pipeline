@@ -68,8 +68,23 @@ build/
 # ======================
 # dbt
 # ======================
-**/profiles.yml       # credentials — không commit, để ở ~/.dbt/profiles.yml
+# credentials — KHÔNG commit (gitignore KHÔNG support inline comments → phải để trên dòng riêng)
+dbt/epl_dbt/profiles.yml
 dbt/epl_dbt/target/
 dbt/epl_dbt/dbt_packages/
 dbt/epl_dbt/logs/
-**/.user.yml          # dbt anonymous telemetry UUID — unique per machine
+# dbt anonymous telemetry UUID — unique per machine
+**/.user.yml
+
+# ======================
+# Metabase
+# ======================
+metabase/plugins/*
+!metabase/plugins/.gitkeep
+metabase/data/
+
+# ======================
+# Debug one-shot scripts
+# ======================
+check_s3.py
+fix_glue_partitions.py

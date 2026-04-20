@@ -4,12 +4,18 @@ A production-grade data pipeline for English Premier League real-time data using
 
 ## Architecture
 ```
-Football API → Smart Producer → Kafka → Kafka Connect → AWS S3
-                                                          ↓
-                                              Spark → dbt → Redshift → Dashboard
+Football API → Producer → Kafka → Spark → S3 (Bronze parquet)
+                                            ↓
+                                  Glue Catalog ← Airflow orchestration
+                                            ↓
+                                         Athena
+                                            ↓
+                                  dbt (Silver views + Gold marts)
+                                            ↓
+                                  Metabase dashboards
 ```
 
-Airflow orchestrates the entire pipeline.
+Airflow orchestrates the entire pipeline (9 tasks: kafka → spark → s3 → glue → DQ → dbt run → dbt test → athena → summary).
 
 ## Tech Stack
 
@@ -17,10 +23,12 @@ Airflow orchestrates the entire pipeline.
 |---|---|---|
 | Apache Kafka | 3.6 | Message broker |
 | Apache Airflow | 2.8.1 | Orchestration |
-| AWS S3 | - | Data Lake (Bronze layer) |
-| AWS Redshift | - | Data Warehouse |
 | Apache Spark | 3.5 | Stream processing |
-| dbt | 1.7 | Transformation |
+| AWS S3 | - | Data Lake (Bronze parquet) |
+| AWS Glue Catalog | - | Table metadata |
+| AWS Athena | - | Serverless SQL engine |
+| dbt (athena) | 1.8.3 | Silver + Gold transformations, tests, docs |
+| Metabase | 0.50.20 | BI dashboards |
 | Python | 3.11 | Core language |
 | Docker | 24+ | Containerization |
 

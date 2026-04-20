@@ -1,0 +1,57 @@
+x-metabase-env: &metabase-env
+  # Metabase metadata DB (settings, dashboards, user accounts)
+  MB_DB_TYPE: postgres
+  MB_DB_DBNAME: metabase
+  MB_DB_PORT: 5432
+  MB_DB_USER: metabase
+  MB_DB_PASS: metabase
+  MB_DB_HOST: metabase-postgres
+  # JVM tuning cho container 2GB
+  JAVA_OPTS: "-Xmx1g -Xms512m"
+
+services:
+  metabase-postgres:
+    image: postgres:15
+    container_name: metabase-postgres
+    environment:
+      POSTGRES_USER: metabase
+      POSTGRES_PASSWORD: metabase
+      POSTGRES_DB: metabase
+    volumes:
+      - metabase_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "metabase"]
+      interval: 5s
+      retries: 5
+    restart: unless-stopped
+
+  metabase:
+    # v0.50+ hỗ trợ Athena community driver stable
+    image: metabase/metabase:v0.50.20
+    container_name: metabase
+    depends_on:
+      metabase-postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../.env                 # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+    environment:
+      <<: *metabase-env
+    volumes:
+      # Athena JDBC driver .jar được load từ đây khi container start
+      - ./plugins:/plugins
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  metabase_pg_data:
+
+networks:
+  default:
+    name: epl-network
+    external: true
