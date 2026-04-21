@@ -108,3 +108,64 @@ models:
           - not_null
       - name: event_time
         description: "Kafka timestamp. Used for dedup within same snapshot_date."
+
+  - name: stg_events
+    description: |
+      **Silver layer** — deduped match events (goals, cards, subs).
+      One row per `event_id` (latest snapshot by `event_time`).
+
+      Pipeline: Football-API (`fixtures/events`) → Kafka (`epl.events`) → Spark (joins matches
+      for season/matchday) → S3 Parquet (bronze) → **this model**.
+
+      `event_type` normalized to lowercase: `goal`, `card`, `subst`, `var`.
+
+      Materialized as **view**.
+    columns:
+      - name: event_id
+        description: "Primary key. Format: `{fixture_id}_{minute}_{player}_{type}`."
+        tests:
+          - unique
+          - not_null
+      - name: match_id
+        description: "FK to stg_matches.match_id."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_matches')
+                field: match_id
+      - name: event_type
+        description: "Normalized by api_mapper: `goal` | `yellow_card` | `red_card` | `substitution`."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['goal', 'yellow_card', 'red_card', 'substitution']
+      - name: minute
+        description: "Match minute 0–120."
+        tests:
+          - not_null
+      - name: team
+        description: "Team owning the event."
+        tests:
+          - not_null
+      - name: player
+        description: "Player name (scorer, booked, sub target)."
+      - name: detail
+        description: "Event subtype — `Normal Goal`, `Yellow Card`, etc."
+      - name: half
+        description: "Derived in Spark: `1st_half` | `2nd_half` | `extra_time`."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['1st_half', '2nd_half', 'extra_time']
+      - name: season
+        description: "Season `YYYY/YY`. Partition key from Spark join."
+        tests:
+          - not_null
+      - name: matchday
+        description: "Gameweek 1–38."
+        tests:
+          - not_null
+      - name: event_time
+        description: "Kafka produce timestamp."
