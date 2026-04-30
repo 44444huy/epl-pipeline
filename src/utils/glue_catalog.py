@@ -79,30 +79,6 @@ class GlueCatalogManager:
             description="EPL match results - enriched with total_goals, result",
         )
 
-    def create_events_table(self, s3_location: str) -> bool:
-        """Create Glue table for events Parquet data (goals, cards, subs)."""
-        return self._create_table(
-            table_name="events",
-            s3_location=f"{s3_location}/events/",
-            columns=[
-                {"Name": "event_id", "Type": "string"},
-                {"Name": "match_id", "Type": "string"},
-                {"Name": "event_type", "Type": "string"},
-                {"Name": "minute", "Type": "int"},
-                {"Name": "team", "Type": "string"},
-                {"Name": "player", "Type": "string"},
-                {"Name": "detail", "Type": "string"},
-                {"Name": "timestamp", "Type": "string"},
-                {"Name": "event_time", "Type": "timestamp"},
-                {"Name": "half", "Type": "string"},
-            ],
-            partition_keys=[
-                {"Name": "season", "Type": "string"},
-                {"Name": "matchday", "Type": "string"},
-            ],
-            description="EPL match events - goals, cards, subs. Enriched with half.",
-        )
-
     def create_standings_table(self, s3_location: str) -> bool:
         """Create Glue table for standings Parquet data."""
         return self._create_table(
@@ -293,7 +269,6 @@ class GlueCatalogManager:
 
         # Create tables
         results["matches_table"] = self.create_matches_table(s3_base)
-        results["events_table"] = self.create_events_table(s3_base)
         results["standings_table"] = self.create_standings_table(s3_base)
 
         # Add partitions
@@ -306,9 +281,6 @@ class GlueCatalogManager:
 
         results["matches_partitions"] = self.add_partitions(
             "matches", f"{s3_base_normalized}/matches/"
-        )
-        results["events_partitions"] = self.add_partitions(
-            "events", f"{s3_base_normalized}/events/"
         )
         results["standings_partitions"] = self.add_partitions(
             "standings", f"{s3_base_normalized}/standings/"

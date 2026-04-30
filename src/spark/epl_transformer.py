@@ -131,18 +131,14 @@ def transform_matches(df: DataFrame) -> DataFrame:
     )
 
 
-def transform_events(df: DataFrame, matches_df: DataFrame = None) -> DataFrame:
+def transform_events(df: DataFrame) -> DataFrame:
     """
     Events transform:
     - Parse timestamp
     - Deduplicate by event_id
     - Add half column (1st half / 2nd half / extra time)
-    - Join with matches to derive season + matchday (partition keys)
-
-    matches_df: transformed matches DF (must contain match_id, season, matchday).
-                If None, season/matchday will be NULL (will write to Hive default partition).
     """
-    base = (
+    return (
         df
         .withColumn("event_time", F.to_timestamp("timestamp"))
         .withColumn(
@@ -152,25 +148,6 @@ def transform_events(df: DataFrame, matches_df: DataFrame = None) -> DataFrame:
             .otherwise("extra_time")
         )
         .dropDuplicates(["event_id"])
-    )
-
-    if matches_df is None:
-        return base
-
-    # Join with matches to get season + matchday for partition pruning.
-    # Broadcast since matches table is tiny (~380 rows/season) vs events (~15k).
-    matches_lookup = matches_df.select(
-        F.col("match_id").alias("m_match_id"),
-        F.col("season").alias("m_season"),
-        F.col("matchday").alias("m_matchday"),
-    )
-    return (
-        base
-        .join(F.broadcast(matches_lookup), base.match_id == matches_lookup.m_match_id, "left")
-        .withColumn("season", F.col("m_season"))
-        .withColumn("matchday", F.col("m_matchday"))
-        .drop("m_match_id", "m_season", "m_matchday")
-        .filter(F.col("season").isNotNull())  # drop events without matching match
     )
 
 
@@ -252,16 +229,13 @@ def run(source: str, input_path: str, output_path: str, bootstrap_servers: str):
     print(f"  Time:   {datetime.utcnow().isoformat()}")
     print(f"{'='*60}")
 
-    # Order matters: matches must be processed before events (events joins with matches).
-    topics = [
-        ("matches",   MATCH_SCHEMA,    transform_matches,   ["season", "matchday"]),
-        ("events",    EVENT_SCHEMA,    transform_events,    ["season", "matchday"]),
-        ("standings", STANDING_SCHEMA, transform_standings, ["season", "snapshot_date"]),
-    ]
+    topics = {
+        "matches":   (MATCH_SCHEMA, transform_matches, ["season", "matchday"]),
+        "events":    (EVENT_SCHEMA, transform_events, ["match_id"]),
+        "standings": (STANDING_SCHEMA, transform_standings, ["season", "snapshot_date"]),
+    }
 
-    matches_df_cached = None  # populated after matches pass, reused by events
-
-    for name, schema, transform_fn, partition_cols in topics:
+    for name, (schema, transform_fn, partition_cols) in topics.items():
         print(f"\n--- Processing {name} ---")
 
         try:
@@ -283,30 +257,9 @@ def run(source: str, input_path: str, output_path: str, bootstrap_servers: str):
             print(f"  Skipping {name} — no data")
             continue
 
-        # Events need matches for partition derivation.
-        # If matches wasn't processed in this batch (empty Kafka topic after retention),
-        # fallback to reading matches from S3 — always the source of truth for historical data.
-        if name == "events":
-            if matches_df_cached is None:
-                matches_path = os.path.join(output_path, "matches")
-                print(f"  matches not in this batch — fallback reading from {matches_path}")
-                try:
-                    matches_df_cached = spark.read.parquet(matches_path)
-                    print(f"  Loaded {matches_df_cached.count()} matches from S3 for join")
-                except Exception as e:
-                    print(f"  ERROR: Cannot read matches from S3: {e}")
-                    print(f"  Skipping events — no matches available for partition derivation")
-                    continue
-            df_transformed = transform_fn(df, matches_df_cached)
-        else:
-            df_transformed = transform_fn(df)
-
+        df_transformed = transform_fn(df)
         count_out = df_transformed.count()
         print(f"  After transform: {count_out}")
-
-        # Cache matches DF so events can join with it
-        if name == "matches":
-            matches_df_cached = df_transformed.cache()
 
         out_path = os.path.join(output_path, name)
         write_parquet(df_transformed, out_path, partition_cols)

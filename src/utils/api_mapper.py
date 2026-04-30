@@ -47,6 +47,8 @@ def map_event_to_match_event(
 ) -> Optional[MatchEvent]:
     """Map API event response → MatchEvent model"""
     try:
+        import uuid
+
         # Map event type
         api_type = event["type"].lower()
         api_detail = (event.get("detail") or "").lower()
@@ -80,24 +82,12 @@ def map_event_to_match_event(
             "Unknown"
         )
 
-        minute = event["time"]["elapsed"] or 0
-        extra = event["time"].get("extra") or 0  # injury time (e.g. 45+2 → minute=45, extra=2)
-        team_name = event["team"]["name"]
-
-        # Deterministic event_id — same API event always maps to same id.
-        # Collisions only if ref gives 2 cards to same player in same minute of same match
-        # (physically impossible: a ref can only show one card at a time).
-        event_id = (
-            f"{fixture_id}_{minute}_{extra}_{team_name}_{player_name}_{event_type}"
-            .replace(" ", "_")
-        )
-
         return MatchEvent(
-            event_id=event_id,
+            event_id=str(uuid.uuid4()),
             match_id=fixture_id,
             event_type=event_type,
-            minute=minute,
-            team=team_name,
+            minute=event["time"]["elapsed"] or 0,
+            team=event["team"]["name"],
             player=player_name,
             detail=detail,
             timestamp=datetime.now(timezone.utc).isoformat(),
