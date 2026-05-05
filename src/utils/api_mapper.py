@@ -6,6 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+SEASON = 2024   # update each season
+
+
 def map_fixture_to_match(fixture: dict) -> Optional[Match]:
     """Map API fixture response → Match model"""
     try:
@@ -39,7 +42,6 @@ def map_fixture_to_match(fixture: dict) -> Optional[Match]:
         logger.error(f"❌ map_fixture_to_match failed: {e} | data: {fixture}")
         return None
 
-SEASON = 2024
 
 def map_event_to_match_event(
     event: dict,

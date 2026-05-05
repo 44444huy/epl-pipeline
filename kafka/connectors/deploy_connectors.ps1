@@ -1,5 +1,5 @@
-# Load .env
-$envFile = "D:\EPL_PROJECT\epl-pipeline\.env"
+# Load .env (path relative to repo root — 2 levels up from kafka/connectors/)
+$envFile = Join-Path $PSScriptRoot "..\..\..env"
 $envVars = @{}
 Get-Content $envFile | ForEach-Object {
     if ($_ -match "^([^#][^=]*)=(.*)$") {

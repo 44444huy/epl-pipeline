@@ -36,7 +36,7 @@ MATCH_EVENT_SCHEMA = {
             "type": "string",
             "enum": ["goal", "yellow_card", "red_card", "substitution"]
         },
-        "minute":     {"type": "integer", "minimum": 1, "maximum": 120},
+        "minute":     {"type": "integer", "minimum": 0, "maximum": 120},
         "team":       {"type": "string"},
         "player":     {"type": "string"},
         "detail":     {"type": ["string", "null"]},
