@@ -88,9 +88,9 @@ models:
               arguments:
                 values: ['home_win', 'away_win', 'draw']
       - name: winner
-        description: "**Derived**: team name of winner, or `'draw'` if tied."
+        description: "**Derived**: team name of winner, or `NULL` if draw."
       - name: loser
-        description: "**Derived**: team name of loser, or `'draw'` if tied."
+        description: "**Derived**: team name of loser, or `NULL` if draw."
       - name: is_high_scoring
         description: "**Derived boolean**: `total_goals >= 4`. Proxy for 'exciting' matches."
         tests:

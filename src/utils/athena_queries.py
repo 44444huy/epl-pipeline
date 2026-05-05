@@ -339,10 +339,10 @@ class AthenaQueryManager:
             for row in result_bronze["rows"][:5]:
                 logger.warning(f"  Bronze duplicate: {row['match_id']} ({row['cnt']} copies)")
 
-        # Check silver (deduped) view
+        # Check silver (deduped) — dbt creates this as epl_staging.stg_matches
         query_silver = """
         SELECT match_id, COUNT(*) as cnt
-        FROM v_matches
+        FROM epl_staging.stg_matches
         GROUP BY match_id
         HAVING COUNT(*) > 1
         """
@@ -350,9 +350,9 @@ class AthenaQueryManager:
             result_silver = self.execute(query_silver)
             silver_dupes = result_silver["row_count"]
         except Exception:
-            # View may not exist yet
+            # View may not exist yet (run dbt first)
             silver_dupes = -1
-            logger.warning("  v_matches view not found, skipping silver check")
+            logger.warning("  epl_staging.stg_matches not found — run dbt before DQ checks")
 
         return {
             "bronze_duplicates": bronze_dupes,

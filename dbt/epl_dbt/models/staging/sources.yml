@@ -13,8 +13,8 @@ sources:
     schema: epl_db
     loaded_at_field: event_time
     freshness:
-      warn_after: {count: 2, period: day}
-      error_after: {count: 7, period: day}
+      warn_after: {count: 7, period: day}
+      error_after: {count: 30, period: day}
     tables:
       - name: matches
         description: "Raw match results. Partitioned by `season`, `matchday`. ~380 rows per season (38 matchdays × 10 matches)."

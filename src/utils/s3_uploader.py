@@ -111,17 +111,19 @@ class S3Uploader:
         logger.info(f"Upload summary: {summary}")
         return summary
 
-    def list_objects(self, prefix: str, max_keys: int = 100) -> list:
-        """List objects in S3 under a prefix."""
+    def list_objects(self, prefix: str) -> list:
+        """List all objects in S3 under a prefix (paginated — no 100-key limit)."""
         try:
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.bucket, Prefix=prefix, MaxKeys=max_keys
-            )
-            objects = response.get("Contents", [])
-            return [
-                {"key": obj["Key"], "size": obj["Size"], "modified": str(obj["LastModified"])}
-                for obj in objects
-            ]
+            paginator = self.s3_client.get_paginator("list_objects_v2")
+            objects = []
+            for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+                for obj in page.get("Contents", []):
+                    objects.append({
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "modified": str(obj["LastModified"]),
+                    })
+            return objects
         except ClientError as e:
             logger.error(f"Failed to list objects: {e}")
             return []

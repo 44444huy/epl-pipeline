@@ -111,7 +111,7 @@ with DAG(
         bash_command=SPARK_SUBMIT_CMD,
     )
 
-    # ── Task 3: Verify S3 output ───────────────────────────────
+    # ── Task 4: Verify S3 output ───────────────────────────────
     def verify_s3(**context):
         from utils.s3_uploader import S3Uploader
         uploader = S3Uploader(bucket=S3_BUCKET)
@@ -135,7 +135,7 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 4: Update Glue Catalog ────────────────────────────
+    # ── Task 5: Update Glue Catalog ────────────────────────────
     def update_glue_catalog(**context):
         """Create/update Glue database, tables, and partitions."""
         from utils.glue_catalog import GlueCatalogManager
@@ -152,7 +152,7 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 5: Data Quality Checks ──────────────────────────────
+    # ── Task 6: Data Quality Checks ──────────────────────────────
     # NOTE: Silver views (v_matches, v_standings) đã được chuyển sang dbt.
     # dbt run sau DAG này để tạo Silver + Gold layer.
     def data_quality_checks(**context):
@@ -185,7 +185,7 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 7: Athena Analytics Queries ───────────────────────
+    # ── Task 8: Athena Analytics Queries ───────────────────────
     def test_athena_analytics(**context):
         """Run analytics queries on Silver views (deduped data)."""
         from utils.athena_queries import AthenaQueryManager
@@ -226,7 +226,7 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 8: Pipeline Summary ────────────────────────────────
+    # ── Task 9: Pipeline Summary ────────────────────────────────
     def pipeline_summary(**context):
         ti = context["ti"]
         s3_count = ti.xcom_pull(task_ids="verify_s3", key="s3_object_count") or 0
@@ -254,7 +254,7 @@ with DAG(
         provide_context=True,
     )
 
-    # ── Task 9: dbt transform (Silver + Gold) ──────────────────
+    # ── Task 7: dbt transform (Silver + Gold) ──────────────────
     # Sau khi bronze ready + DQ pass, dbt build Silver views + Gold tables.
     # Mount paths: /opt/airflow/dbt (project) + /opt/airflow/dbt_profiles (DBT_PROFILES_DIR env var)
     DBT_PROJECT_DIR = "/opt/airflow/dbt/epl_dbt"
