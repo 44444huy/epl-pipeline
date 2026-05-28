@@ -45,7 +45,7 @@ models:
         description: "**Derived**: `round(points / played, 2)`. Normalized points efficiency."
         tests:
           - not_null
-      - name: snapshot_date
+      - name: last_updated
         description: "Date of the latest standings snapshot used."
       - name: season
         description: "Season `YYYY/YY`. **Partition key** on S3."

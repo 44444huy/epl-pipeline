@@ -14,6 +14,8 @@ End-to-end data pipeline for English Premier League match data — from Football
 
 Full dashboard PDF export: [docs/screenshots/epl_season_overview_dashboard.pdf](docs/screenshots/epl_season_overview_dashboard.pdf)
 
+Learning and interview guide: [docs/epl-pipeline-learning-guide.md](docs/epl-pipeline-learning-guide.md)
+
 Four Metabase dashboards on Gold-layer dbt models:
 - **League Table 2024/25** — full 20-team standings
 - **Points by League Zones** — color-coded by EPL rules (Champions League / Europa / Conference / Midtable / Relegation)
@@ -105,6 +107,7 @@ epl-pipeline/
 │   ├── spark/epl_transformer.py
 │   └── utils/                  # api_client, glue_catalog, athena_queries, s3_uploader
 ├── docs/
+│   ├── epl-pipeline-learning-guide.md
 │   ├── day27-metabase-dashboard.md
 │   └── screenshots/            # Dashboard PDF export
 └── test/                       # Unit tests

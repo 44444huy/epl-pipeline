@@ -3,6 +3,7 @@
 # ======================
 .env
 .env.*
+!.env.example
 kafka/.env    
 __pycache__/
 *.pyc
